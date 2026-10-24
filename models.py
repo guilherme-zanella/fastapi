@@ -1,14 +1,12 @@
 from sqlalchemy import create_engine, Integer, String, Boolean, Float, Column, ForeignKey, Enum
 from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy_utils import ChoiceType
 
 #Cria a conexão do seu banco
 db = create_engine('sqlite:///banco.db')
 
+
 # Cria a base do banco de dados
 Base = declarative_base()
-Session = sessionmaker(bind=Base)
-session = Session()
 
 # Cria as clsses/tabelas do banco
 class Usuario(Base):
@@ -63,4 +61,4 @@ class Itens(Base):
         self.pedido = pedido
 
 # Executa a criação dos metadados do seu banco (cria efetivamente o banco)
-Base.metadados.created_all()
+
