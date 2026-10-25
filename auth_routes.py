@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from models import Usuario
-from hashlib import sha256
 from dependencies import pegar_sessao
+from main import bcrypt_context
+from schemas import UsuarioSchema
+from sqlalchemy.orm import Session
 
 auth_router = APIRouter(prefix='/auth', tags=['autenticação'])
 
@@ -13,15 +15,15 @@ async def home():
     return {'msg': 'Você acessou a rota de autenticação', 'autenticado': False}
 
 @auth_router.post('/criar_usuario')
-async def criar_usuario(nome:str, email:str, senha:str, session = Depends(pegar_sessao)):
+async def criar_usuario(usuario_schema: UsuarioSchema, session: Session = Depends(pegar_sessao)):
 
-    usuario = session.query(Usuario).filter(Usuario.email==email).first()
+    usuario = session.query(Usuario).filter(Usuario.email==usuario_schema.email).first()
 
     if usuario:
-        return {'msg': 'Já existe um usuário com esse email'}
+        raise HTTPException(status_code=400, detail='Email já cadastrado')
     else:
-        hash = sha256(senha.encode('utf-8')).hexdigest()
-        novo_usuario = Usuario(nome, email, hash)
+        senha_criptografada = bcrypt_context.hash(usuario_schema.senha)
+        novo_usuario = Usuario(usuario_schema.nome, usuario_schema.email, senha_criptografada, usuario_schema.ativo, usuario_schema.admin)
         session.add(novo_usuario)
         session.commit()
-        return {'msg': f'Usuario {nome} cadastrado com sucesso'}
+        return {'msg': f'Usuario {usuario_schema.email} cadastrado com sucesso'}
