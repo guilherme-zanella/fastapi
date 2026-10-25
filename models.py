@@ -1,9 +1,8 @@
 from sqlalchemy import create_engine, Integer, String, Boolean, Float, Column, ForeignKey, Enum
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base
 
 #Cria a conexão do seu banco
 db = create_engine('sqlite:///banco.db')
-
 
 # Cria a base do banco de dados
 Base = declarative_base()
