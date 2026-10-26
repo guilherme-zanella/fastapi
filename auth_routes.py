@@ -1,16 +1,31 @@
 from fastapi import APIRouter, Depends, HTTPException
 from models import Usuario
 from dependencies import pegar_sessao
-from main import bcrypt_context
+from main import bcrypt_context, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTE, SECRET_KEY
 from schemas import UsuarioSchema, LoginSchema
 from sqlalchemy.orm import Session
+from jose import jwt, JWTError
+from datetime import datetime, timedelta, timezone
 
 auth_router = APIRouter(prefix='/auth', tags=['autenticação'])
 
 
 def criar_token(id_usuario):
-    token = f'fewagtaf{id_usuario}' 
-    return token
+    data_expiracao = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTE)
+    dict_informacoes = {'sub': id_usuario, 'exp': data_expiracao} # sub é o nome para o id do usuario
+    jwt_codificado = jwt.encode(dict_informacoes, SECRET_KEY, ALGORITHM)
+
+    return jwt_codificado
+
+
+def autenticar_usuario(email, senha, session):
+    usuario = session.query(Usuario).filter(Usuario.email==email).first()
+    if not usuario:
+        return False
+    elif not bcrypt_context.verify(senha, usuario.senha):
+        return False
+
+    return usuario
 
 
 
@@ -20,6 +35,7 @@ async def home():
     Essa é o rota padrão de autenticação do sistema.
     '''
     return {'msg': 'Você acessou a rota de autenticação', 'autenticado': False}
+
 
 @auth_router.post('/criar_usuario')
 async def criar_usuario(usuario_schema: UsuarioSchema, session: Session = Depends(pegar_sessao)):
@@ -35,12 +51,13 @@ async def criar_usuario(usuario_schema: UsuarioSchema, session: Session = Depend
         session.commit()
         return {'msg': f'Usuario {usuario_schema.email} cadastrado com sucesso'}
 
+
 @auth_router.post('/login')
 async def login(login_schema: LoginSchema, session: Session = Depends(pegar_sessao)):
-    usuario = session.query(Usuario).filter(Usuario.email==login_schema.email).first()
+    usuario = autenticar_usuario(login_schema.email, login_schema.senha, session)
 
     if not usuario:
-        raise HTTPException(status_code=400, detail='Usuário não encontrado')
+        raise HTTPException(status_code=400, detail='Usuário não encontrado ou credenciais inválidas')
     else:
         access_token = criar_token(usuario.id)
         return {'access_token': access_token,
