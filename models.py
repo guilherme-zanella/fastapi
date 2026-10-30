@@ -33,16 +33,19 @@ class Pedido(Base):
     status = Column('status', Enum('pendente', 'cancelado', 'finalizado'))
     dono = Column('dono', ForeignKey('usuarios.id'))
     preco = Column('preco', Float)
-    #itens = 
+    # itens = Column('itens', String)
 
     def __init__(self, dono, status='pendente', preco=0):
         self.dono = dono
         self.status = status
         self.preco = preco
 
+    def calcular_preco(self):
+        self.preco = 10
 
 
-class Itens(Base):
+
+class Item(Base):
     __tablename__ = 'itens'
 
     id = Column('id', Integer, autoincrement=True, primary_key=True)
