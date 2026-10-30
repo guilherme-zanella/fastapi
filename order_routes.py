@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from schemas import PedidoSchema
 from sqlalchemy.orm import Session
 from dependencies import pegar_sessao, verificar_token
@@ -35,3 +35,15 @@ async def cancelar_pedido(id_pedido: int, session: Session = Depends(pegar_sessa
         'msg': f'Pedido {pedido.id} cancelado com sucesso',
         'pedido': pedido
     }
+
+
+@order_router.get('/listar/')
+async def listar_pedidos(session: Session = Depends(pegar_sessao), usuario: Usuario = Depends(verificar_token), skip: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=0, le=100)):
+    if not usuario.admin:
+        raise HTTPException(status_code=401, detail='Você não tem permissão para realizar isso')
+    else:
+        pedidos = session.query(Pedido).all()
+        return {
+            'pedidos': pedidos[skip: limit+skip]
+        }
+        
