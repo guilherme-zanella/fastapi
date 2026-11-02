@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, Integer, String, Boolean, Float, Column, ForeignKey, Enum
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 
 #Cria a conexão do seu banco
 db = create_engine('sqlite:///banco.db')
@@ -33,7 +33,7 @@ class Pedido(Base):
     status = Column('status', Enum('pendente', 'cancelado', 'finalizado'))
     dono = Column('dono', ForeignKey('usuarios.id'))
     preco = Column('preco', Float)
-    # itens = Column('itens', String)
+    itens = relationship('Item', cascade='all, delete')
 
     def __init__(self, dono, status='pendente', preco=0):
         self.dono = dono
@@ -41,7 +41,7 @@ class Pedido(Base):
         self.preco = preco
 
     def calcular_preco(self):
-        self.preco = 10
+        self.preco = sum(item.preco * item.quantidade for item in self.itens)
 
 
 
@@ -62,5 +62,5 @@ class Item(Base):
         self.preco_unitario = preco_unitario
         self.pedido = pedido
 
-# Executa a criação dos metadados do seu banco (cria efetivamente o banco)
-
+# criar migração: alembic revision --autogenerate -m "Mensagem"
+# executar migração: alembic upgrade head

@@ -57,8 +57,8 @@ async def adicionar_item(id_pedido: int, item_schema: ItemSchema, session: Sessi
         raise HTTPException(status_code=401, detail='Você não tem permissão para alterar esse pedido')
     else: 
         item = Item(item_schema.sabor, item_schema.tamanho, item_schema.preco_unitario, pedido.id, item_schema.quantidade)
-        pedido.calcular_preco()
         session.add(item)
+        pedido.calcular_preco()
         session.commit()
         return {
             'msg': 'Item criado com sucesso',
