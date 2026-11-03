@@ -66,3 +66,22 @@ async def adicionar_item(id_pedido: int, item_schema: ItemSchema, session: Sessi
             'preco': pedido.preco
         }
     
+
+@order_router.post('/pedido/remover-item/{id-item}')
+async def remover_item(id_item = int, session: Session = Depends(pegar_sessao), usuario: Usuario = Depends(verificar_token)):
+    item = session.query(Item).filter(Item.id==id_item).first()
+    pedido = session.query(Pedido).filter(Pedido.id==item.pedido).first()
+
+    if not item:
+        raise HTTPException(status_code=400, detail='Item não encontrado')
+    if not usuario.admin and usuario.id != pedido.dono:
+        raise HTTPException(status_code=401, detail='Você não tem permissão para alterar este item')
+
+    session.delete(item)
+    pedido.calcular_preco()
+    session.commit()
+    return {
+        'msg': 'Item removido com sucesso',
+        'qtd_itens': len(pedido.itens),
+        'pedido': pedido
+    }
