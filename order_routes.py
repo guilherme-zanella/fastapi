@@ -67,7 +67,7 @@ async def adicionar_item(id_pedido: int, item_schema: ItemSchema, session: Sessi
         }
     
 
-@order_router.post('/pedido/remover-item/{id-item}')
+@order_router.post('/pedido/remover-item/{id_item}')
 async def remover_item(id_item = int, session: Session = Depends(pegar_sessao), usuario: Usuario = Depends(verificar_token)):
     item = session.query(Item).filter(Item.id==id_item).first()
     pedido = session.query(Pedido).filter(Pedido.id==item.pedido).first()
@@ -84,4 +84,46 @@ async def remover_item(id_item = int, session: Session = Depends(pegar_sessao), 
         'msg': 'Item removido com sucesso',
         'qtd_itens': len(pedido.itens),
         'pedido': pedido
+    }
+
+
+@order_router.post('/pedido/finalizar/{id_pedido}')
+async def finalizar_pedido(id_pedido: int, usuario: Usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+    pedido = session.query(Pedido).filter(Pedido.id==id_pedido).first()
+
+    if not pedido:
+        raise HTTPException(status_code=400, detail='Pedido não encontrado')
+
+    if not usuario.admin and usuario.id != pedido.dono:
+        raise HTTPException(status_code=401, detail='Você não tem permissão para excluir esse vídeo')
+
+    pedido.status = 'finalizado'
+    session.commit()
+    return {
+        'msg': f'Pedido {pedido.id} cancelado com sucesso',
+        'pedido': pedido
+    }
+
+
+@order_router.get('/pedido/{id_pedido}')
+async def visualizar_pedido(id_pedido: int, usuario: Usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+    pedido = session.query(Pedido).filter(Pedido.id==id_pedido).first()
+
+    if not pedido:
+        raise HTTPException(status_code=400, detail='Pedido não encontrado')
+    if not usuario.admin and pedido.dono != usuario.id:
+        raise HTTPException(status_code=401, detail='Você não tem permissão para acessar este pedido')
+    
+    return {
+        'qtd_itens': len(pedido.itens),
+        'pedido': pedido
+    }
+
+
+@order_router.get('/listar/pedidos_usuario')
+async def listar_pedidos_usuario(usuario: Usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+    pedidos = session.query(Pedido).filter(Pedido.dono==usuario.id).all()
+
+    return {
+        'pedidos': pedidos
     }
