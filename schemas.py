@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 class UsuarioSchema(BaseModel):
     nome: str
@@ -28,4 +28,12 @@ class ItemSchema(BaseModel):
 
     class Config:
         from_attributes = True
-    
+
+class ResponsePedidoSchema(BaseModel):
+    id: int
+    status: str
+    preco: float
+    itens: List[ItemSchema]
+
+    class Config:
+        from_attributes = True
